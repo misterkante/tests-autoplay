@@ -1,54 +1,61 @@
-import React, { useEffect, useRef } from 'react';
-import { Howl } from 'howler';
+import React, { useState, useEffect } from 'react';
 
 const AudioAutoplay = () => {
-  const soundRef = useRef(null);
+  const [iframeSrc, setIframeSrc] = useState('');
 
   useEffect(() => {
     const audioUrl = "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3";
     
-    console.log("Initialisation de Howler.js...");
-    
-    soundRef.current = new Howl({
-      src: [audioUrl],
-      html5: false, // Forcer Web Audio API via Howler
-      loop: true,
-      volume: 0.5,
-      onload: () => {
-        console.log("Howler : Audio chargé avec succès.");
-      },
-      onplay: () => {
-        console.log("Howler : Lecture démarrée !");
-      },
-      onloaderror: (id, error) => {
-        console.error("Howler : Erreur de chargement :", error);
-      },
-      onplayerror: (id, error) => {
-        console.error("Howler : Erreur de lecture :", error);
-        // Howler can automatically try to play on next user interaction if it fails
-        soundRef.current.once('unlock', () => {
-          console.log("Howler : Audio débloqué par interaction utilisateur, tentative de lecture...");
-          soundRef.current.play();
-        });
-      }
-    });
+    // Construct a simple HTML page for the iframe
+    // We use a blob URL to avoid potential CSP or Data URL length issues
+    const iframeHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Audio Autoplay Iframe</title>
+        </head>
+        <body>
+          <audio id="audio" src="${audioUrl}" autoplay loop></audio>
+          <script>
+            const audio = document.getElementById('audio');
+            audio.play().then(() => {
+              console.log('Iframe: Playback started successfully');
+            }).catch(e => {
+              console.error('Iframe: Playback failed', e);
+            });
+          </script>
+        </body>
+      </html>
+    `;
 
-    console.log("Howler : Tentative de lecture immédiate...");
-    soundRef.current.play();
+    const blob = new Blob([iframeHtml], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    setIframeSrc(url);
+
+    console.log("Solution 4: Iframe créé avec allow='autoplay'");
 
     return () => {
-      if (soundRef.current) {
-        soundRef.current.unload();
-      }
+      URL.revokeObjectURL(url);
     };
   }, []);
 
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
-      <h1>Bienvenue sur mon site (Solution 3 - Howler.js)</h1>
-      <p>L'audio devrait démarrer via la bibliothèque Howler.js.</p>
+      <h1>Bienvenue sur mon site (Solution 4 - Iframe)</h1>
+      <p>L'audio devrait démarrer via un iframe caché.</p>
+      
+      {/* Hidden Iframe */}
+      {iframeSrc && (
+        <iframe
+          src={iframeSrc}
+          allow="autoplay"
+          style={{ display: 'none' }}
+          title="audio-iframe"
+        />
+      )}
+
       <div id="status-display" style={{ marginTop: '20px', padding: '10px', border: '1px solid #ccc' }}>
-        Vérifiez la console pour les logs Howler.js.
+        Vérifiez la console pour les logs de l'iframe (si accessibles) ou le son.
       </div>
     </div>
   );
